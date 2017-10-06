@@ -1,0 +1,18 @@
+steps:
+
+  start a shiny project (or possibly flexdashboard)
+  keep content within sidebar, but comment out (use as reference)
+  refer to cheatsheet
+  put needed libraries at the top of any script
+  start with server, do basic data manipulation
+  go to input, display a simple result of previous
+  expand
+  change layout
+  debugging (difficult at best)
+
+issues:
+
+  little is inuitive, nor will prior R experience help you
+  anything non-trivial will probably be a PITA
+  documentation poor
+  standard conditionals may require a lot of time to pull off correctly
