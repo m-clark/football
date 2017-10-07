@@ -4,6 +4,6 @@ This uses the [engsoccerdata package](https://github.com/jalapic/engsoccerdata) 
 
 <img src="img/Everton.svg" style="display:block; margin: 0 auto;">
 
-<img src="img/Sheffield_Wednesday.svg" style="display:block; margin: 0 auto;">
+<img src="img/Sheffield_Wednesday.svg" style="display:block; margin: 0 auto;" width=50%>
 
 <img src="img/FC_St._Pauli.svg" style="display:block; margin: 0 auto;">
