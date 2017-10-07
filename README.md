@@ -2,10 +2,10 @@ This uses the [engsoccerdata package](https://github.com/jalapic/engsoccerdata) 
 
 See the shiny app [here](https://micl.shinyapps.io/football/).
 
-<img src="img/Borussia_Dortmund.svg" style="display:block; margin: 0 auto;" width=75%>
+<img src="img/Borussia_Dortmund.svg" style="display:block; margin: 0 auto;" width=50%>
 
-<img src="img/Everton.svg" style="display:block; margin: 0 auto;">
+<img src="img/Everton.svg" style="display:block; margin: 0 auto;" width=50%>
 
 <img src="img/Sheffield_Wednesday.svg" style="display:block; margin: 0 auto;" width=50%>
 
-<img src="img/FC_St._Pauli.svg" style="display:block; margin: 0 auto;">
+<img src="img/FC_St._Pauli.svg" style="display:block; margin: 0 auto;" width=50%>
