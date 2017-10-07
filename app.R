@@ -14,15 +14,16 @@ teamnames = teamnames %>%
 
 mls$tier = 1  # only dataset that doesn't have tier for some reason
 
+load('data/all_leagues.RData')
 
-
+main_page_text = "This dashboard creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), or league games for a specific season."
 
 # UI ----------------------------------------------------------------------
 
 
 
 # Define UI for application that draws a histogram
-ui <- dashboardPage(skin='black',
+ui <- dashboardPage(skin='red',
 
   dashboardHeader(
     title="Historical Football Data",
@@ -31,8 +32,9 @@ ui <- dashboardPage(skin='black',
   dashboardSidebar(
     sidebarMenu(
       menuItem("Main", tabName = "main", icon = icon("futbol-o")),
-      menuItem("League Tables", tabName = "league_tables", icon = icon("calendar")),
-      menuItem("Team History", tabName = "team_history", icon = icon("line-chart"))
+      menuItem("League Tables", tabName = "league-tables", icon = icon("trophy")),
+      menuItem("Team History", tabName = "team-history", icon = icon("line-chart")),
+      menuItem("Game History", tabName = "game-history", icon = icon("calendar"))
     ),
     width='15%'
   ),
@@ -41,9 +43,14 @@ ui <- dashboardPage(skin='black',
       tags$link(rel = "stylesheet", type = "text/css", href = "standard_html.css")
     ),
     tabItems(
+
+
+#• main tab ----------------------------------------------------------------
+
+
       tabItem(tabName = "main",
               box(
-                p("This dashboard creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams historical first tier finishing position (assuming they were ever in the first tier)."),
+                p(main_page_text),
                 br(),
                 br(),
                 p('The data are provided by the engsoccerdatapackage.'),
@@ -52,10 +59,15 @@ ui <- dashboardPage(skin='black',
                 div(style='text-align:center',
                     img(src='img/Borussia_Dortmund.svg', width='10%'),
                     img(src='img/Sheffield_Wednesday.png', width='8%'),
+                    img(src='img/Portland_Timbers_logo.svg.png', width='10%'),
                     img(src='img/Everton.svg', width='10%'),
                     img(src='img/FC_St._Pauli.svg', width='10%')))),
 
-      tabItem(tabName = "league_tables",
+
+#• league-history ----------------------------------------------------------
+
+
+      tabItem(tabName = "league-tables",
               fluidRow(
                 sidebarPanel("Get League Tables",
                              selectInput("country",
@@ -66,15 +78,18 @@ ui <- dashboardPage(skin='black',
                              uiOutput('Tier'), width=2
                 ),
                 column(
-                  dataTableOutput('data'),
+                  dataTableOutput('league'),
                   width=5
                 )
 
               )
       ),
 
-      # Second tab content
-      tabItem(tabName = "team_history",
+
+#• team-history ------------------------------------------------------------
+
+
+      tabItem(tabName = "team-history",
               h3("Historical First Tier Finishing"),
               fluidRow(
                 sidebarPanel(
@@ -85,11 +100,55 @@ ui <- dashboardPage(skin='black',
                   uiOutput('Team'), width=2
                 ),
                 column(
-                  plotlyOutput('team_history'),
+                  plotlyOutput('team-history'),
+                  width=5
+                )
+              )
+      ),
+
+
+#• game-history ------------------------------------------------------------
+
+      tabItem(tabName = "game-history",
+              h3("Find a game."),
+              fluidRow(
+                sidebarPanel(
+                  selectInput("team2",
+                              "Choose a team:",
+                              choices=sort(unique(teamnames$name)),
+                              selected='Everton'),
+                  uiOutput('gamesUI'), width=2
+                ),
+                column(
+                  dataTableOutput('games'),
+                  p('Date: Date of match', br(),
+                    'Season: Season of match - refers to starting year', br(),
+                    'home: Home team', br(),
+                    'visitor: Visiting team',
+                    'FT: Full-time result', br(),
+                    'hgoal: Goals scored by home team', br(),
+                    'vgoal: Goals scored by visiting team', br(),
+                    'division: Division: 1,2,3,4 or 3a (Old 3-North) or 3b (Old 3-South)', br(),
+                    'tier: Tier of football pyramid: 1,2,3,4', br(),
+                    'totgoal: Total goals in game', br(),
+                    'goaldif: Goal difference in game home goals - visitor goals', br(),
+                    'result: Result: H-Home Win, A-Away Win, D-Draw', br(),
+                    'hgoal: Goals scored by home team', br(),
+                    'vgoal: Goals scored by visiting team', br(),
+                    'hconf: Conference of home team', br(),
+                    'vconf: Conference of visiting team', br(),
+                    'totgoal: Total goals in game', br(),
+                    'round: Regular Season or Playoff round', br(),
+                    'leg: leg of Playoff game', br(),
+                    'hgoalaet: Goals scored by home team after extra time', br(),
+                    'vgoalaet: Goals scored by visiting team after extra time', br(),
+                    'hpen: Penalties scored by home team in shootout', br(),
+                    'vpen: Penalties scored by visiting team in shootout'),
                   width=5
                 )
               )
       )
+
     )
 )
 )
@@ -112,7 +171,7 @@ server <- function(input, output) {
     get(c0)
   })
 
-  output$data = renderDataTable({
+  output$league = renderDataTable({
     df = df_init()
     maketable_all(df = df, Season=input$year, tier=input$tier) %>%
       mutate(Pos = strtoi(Pos)) %>%
@@ -180,7 +239,7 @@ server <- function(input, output) {
 
       })
 
-      output$team_history = renderPlotly({
+      output$team-history = renderPlotly({
         validate(
           need(try(nrow(team) != 0), "Sorry, your team sucks and was never in the first tier, so who cares what they did.")
         )
@@ -206,6 +265,25 @@ server <- function(input, output) {
   })
 
 
+# Game results ------------------------------------------------------------
+
+  output$gamesUI <- renderUI({
+    games = all_leagues %>%
+      filter(home==input$team2 | visitor==input$team2)
+    selectInput("season", "Select a season:", c('', games$Season), selected=NULL)
+  })
+
+
+  output$games = renderDataTable({
+    all_leagues %>%
+      filter(home==input$team2 | visitor==input$team2) %>%
+      filter(Season == input$season) %>%
+      datatable(extensions='Buttons',
+                rownames=F,
+                options=list(dom='Bt',
+                             pageLength=nrow(.),
+                             buttons = c('copy', 'csv')))
+  })
 
 
 }

@@ -33,6 +33,7 @@ a {
 body {
   color: #585858; /*#595959 (i.e. gray35) provides recommended contrast ratio 7:1 on white; change 9s to 8s for offwhite;*/
   background-color: #fffff8;
+  font-family: Roboto;
 }
 
 p {
@@ -131,4 +132,23 @@ div.datatables {
 
 table {
   margin: auto;
+}
+
+
+/* dashboard specific */
+
+.skin-red .main-header .logo  {
+  background-color: #9E1B34;
+}
+
+.skin-red .main-header .navbar {
+    background-color: #9E1B34;
+}
+
+.content  {
+  background-color: #fffff8;
+}
+
+.content-wrapper {
+  background-color: #fffff8;
 }
