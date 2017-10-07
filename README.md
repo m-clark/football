@@ -6,6 +6,6 @@ See the shiny app [here](https://micl.shinyapps.io/football/).
 
 <img src="img/Everton.svg" style="display:block; margin: 0 auto;" width=50%>
 
-<img src="img/Sheffield_Wednesday.svg" style="display:block; margin: 0 auto;" width=50%>
+<img src="img/Sheffield_Wednesday.png" style="display:block; margin: 0 auto;" width=50%>
 
 <img src="img/FC_St._Pauli.svg" style="display:block; margin: 0 auto;" width=50%>
