@@ -1,6 +1,7 @@
 steps:
 
   start a shiny project (or possibly flexdashboard)
+  ui vs. server; single 'app' vs. separate files
   keep content within sidebar, but comment out (use as reference)
   refer to cheatsheet
   put needed libraries at the top of any script
@@ -9,10 +10,11 @@ steps:
   expand
   change layout
   debugging (difficult at best)
+  demo dashboard
 
 issues:
 
-  little is inuitive, nor will prior R experience help you
+  little is inuitive, nor will prior R experience help much
   anything non-trivial will probably be a PITA
   documentation poor
-  standard conditionals may require a lot of time to pull off correctly
+  standard conditionals and other programming basics may require a lot of time to pull off correctly

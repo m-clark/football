@@ -3,7 +3,7 @@
 
 
 library(shiny); library(dplyr); library(tidyr); library(engsoccerdata);
-library(DT); library(plotly); library(shinydashboard)
+library(DT); library(plotly); library(markdown)
 # odd dependency
 # library(nlme)
 
@@ -15,95 +15,66 @@ teamnames = teamnames %>%
 mls$tier = 1  # only dataset that doesn't have tier for some reason
 
 
-
-
 # UI ----------------------------------------------------------------------
 
 
 
-# Define UI for application that draws a histogram
-ui <- dashboardPage(skin='black',
+ui <- navbarPage(
 
-  dashboardHeader(
-    title="Historical Football Data",
-    titleWidth='15%'
-    ),
-  dashboardSidebar(
-    sidebarMenu(
-      menuItem("Main", tabName = "main", icon = icon("futbol-o")),
-      menuItem("League Tables", tabName = "league_tables", icon = icon("calendar")),
-      menuItem("Team History", tabName = "team_history", icon = icon("line-chart"))
-    ),
-    width='15%'
+  'TITLE',
+
+
+
+  tabPanel("Historical League Tables",
+           includeCSS("www/standard_html.css"),
+           titlePanel("Soccer Data"),
+           headerPanel(h5("The following creates tables for a given country and year selected. A few countries will have multiple tiers available.",
+                          br(),br(),
+                          'The data are provided by the engsoccerdatapackage.',br(),br())),
+           fluidRow(
+             sidebarPanel("Get League Tables",
+                          selectInput("country",
+                                      "Choose a country:",
+                                      choices=unique(teamnames$country),
+                                      selected='England'),
+                          uiOutput('Year'),
+                          uiOutput('Tier'), width=2
+             ),
+             column(
+               dataTableOutput('data'),
+               width=5
+             )
+           )
   ),
-  dashboardBody(
-    tags$head(
-      tags$link(rel = "stylesheet", type = "text/css", href = "standard_html.css")
-    ),
-    tabItems(
-      tabItem(tabName = "main",
-              box(
-                p("This dashboard creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams historical first tier finishing position (assuming they were ever in the first tier)."),
-                br(),
-                br(),
-                p('The data are provided by the engsoccerdatapackage.'),
-                br(),
-                br(),
-                div(style='text-align:center',
-                    img(src='img/Borussia_Dortmund.svg', width='10%'),
-                    img(src='img/Sheffield_Wednesday.png', width='8%'),
-                    img(src='img/Everton.svg', width='10%'),
-                    img(src='img/FC_St._Pauli.svg', width='10%')))),
 
-      tabItem(tabName = "league_tables",
-              fluidRow(
-                sidebarPanel("Get League Tables",
-                             selectInput("country",
-                                         "Choose a country:",
-                                         choices=unique(teamnames$country),
-                                         selected='England'),
-                             uiOutput('Year'),
-                             uiOutput('Tier'), width=2
-                ),
-                column(
-                  dataTableOutput('data'),
-                  width=5
-                )
+  tabPanel('Team History',
+           fluidRow(
+             sidebarPanel(
+               selectInput("country2",
+                           "Choose a country:",
+                           choices=unique(teamnames$country),
+                           selected='England'),
+               uiOutput('Team'), width=2
+             ),
+             column(
+               plotlyOutput('team_history'),
+               width=5
+             )
+           )
+           )
 
-              )
-      ),
-
-      # Second tab content
-      tabItem(tabName = "team_history",
-              h3("Historical First Tier Finishing"),
-              fluidRow(
-                sidebarPanel(
-                  selectInput("country2",
-                              "Choose a country:",
-                              choices=unique(teamnames$country),
-                              selected='England'),
-                  uiOutput('Team'), width=2
-                ),
-                column(
-                  plotlyOutput('team_history'),
-                  width=5
-                )
-              )
-      )
-    )
 )
-)
+
+
 
 
 # Server ------------------------------------------------------------------
 
-
-
-# Define server logic required to draw a histogram
+# Define server logic
 server <- function(input, output) {
 
 
-# League Tables ----------------------------------------------------------
+# Historical Tables -------------------------------------------------------
 
 
   df_init = reactive({
@@ -137,7 +108,7 @@ server <- function(input, output) {
 
 
 
-  # Team history ------------------------------------------------------------
+# Team history ------------------------------------------------------------
 
 
   df_init2 = reactive({
@@ -204,7 +175,6 @@ server <- function(input, output) {
       })
     }
   })
-
 
 
 
