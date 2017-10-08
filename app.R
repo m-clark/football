@@ -89,6 +89,7 @@ ui <- dashboardPage(skin='red',
               h3('Historical League Tables'),
               fluidRow(
                 sidebarPanel(p('Start with a country, then select from the available seasons. Season year is the beginning year, e.g. 2013 is the 2013/2014 season.'),
+                             br(),
                              selectInput("league_country",
                                          "Choose a country:",
                                          choices=unique(teamnames$country),
@@ -112,7 +113,8 @@ ui <- dashboardPage(skin='red',
               h3("Historical First Tier Finishing"),
               fluidRow(
                 sidebarPanel(
-                  p('Select a country/team to see their first tier finishing position, for the seasons they were in the first tier.'),
+                  p('Select a country/team to see their first tier finishing position, for the seasons they were in the first tier.', strong('It will take a few seconds to process the data.')),
+                  br(),
                   selectInput("team_country",
                               "Choose a country:",
                               choices=unique(teamnames$country),
@@ -320,12 +322,15 @@ server <- function(input, output) {
 
         incProgress(.7)
 
+        # note: Plotly will not respect integer/year and will put in inaccurate
+        # decimal points; Note: tried lubridate same issue.; unbelievable
+        # https://github.com/plotly/plotly.js/issues/135
         team = all_seasons %>%
           do(team = filter(.$tab, team==input$team),
              Season = .$Season) %>%
           unnest(Season) %>%
           unnest %>%
-          mutate(Pos = as.integer(Pos))
+          mutate_at(vars(Season, Pts, Pos), as.integer)
 
         incProgress(.2)
 
@@ -335,6 +340,14 @@ server <- function(input, output) {
         validate(
           need(try(nrow(team) != 0), "Sorry, your team sucks and was never in the first tier, so who cares what they did.")
         )
+        # first of min ifelse fixes the 'bournemouth', i.e. plotly year
+        # formatting problem. among other arbitrary decisions plotly devs have
+        # made,one is to not do stupid formatting if there is at least five
+        # units displayed
+        minYear_xaxis = ifelse(nrow(team) < 3, min(team$Season)-3, min(team$Season)-1)
+        maxYear_xaxis = ifelse(max(team$Season)>=lubridate::year(Sys.Date())-2,
+                               max(team$Season)+1,
+                               max(team$Season)+3)
         team %>%
           plot_ly() %>%
           add_lines(x=~Season, y=~Pos, color=I('#ff5500')) %>%
@@ -342,11 +355,18 @@ server <- function(input, output) {
                       color=~gd>0, size=~-Pos, text=~paste('GD:',gd),
                       showlegend=F, colors='Viridis') %>%
           layout(title = input$team,
-                 yaxis = list(range=c(23,.5))) %>%
-          layout(xaxis = list(zeroline=F,
-                              showgrid=F),
+                 xaxis = list(zeroline=F,
+                              showgrid=F,
+                              range=c(minYear_xaxis, maxYear_xaxis),
+                              tick0 = minYear_xaxis,
+                              # dtick = 1,
+                              tickformat='####'),
                  yaxis = list(zeroline=F,
-                              showgrid=F),
+                              showgrid=F,
+                              range=c(25,.5),
+                              autorange = "reversed",
+                              dtick=2,
+                              tick0 = 1),
                  plot_bgcolor='transparent',
                  paper_bgcolor='transparent') %>%
           config(showLink = F,
@@ -445,6 +465,7 @@ server <- function(input, output) {
   output$h2h_result = renderDataTable({
     games_between(df, teamname1=input$h2h_team1, teamname2=input$h2h_team2) %>%
       select(-Season) %>%
+      arrange(Date) %>%
       datatable(extensions='Buttons',
                 rownames=F,
                 options=list(dom='Bt',
