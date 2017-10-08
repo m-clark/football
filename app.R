@@ -1,9 +1,9 @@
 
 # Preliminaries -----------------------------------------------------------
 
-
-library(shiny); library(dplyr); library(tidyr); library(engsoccerdata);
-library(DT); library(plotly); library(shinydashboard)
+library(shiny); library(shinydashboard); library(dplyr); library(tidyr);
+library(engsoccerdata);
+library(DT); library(plotly);
 # odd dependency
 # library(nlme)
 
@@ -17,20 +17,20 @@ mls$tier = 1  # only dataset that doesn't have tier for some reason
 load('data/all_leagues.RData')
 
 
-main_page_text = "This dashboard creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), or league games for a specific season."
+main_page_text = "This dashboard creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), league games for a specific season, all-time tables, and all-time head-to-head results."
 
 data_list = p(
-strong("England"),":	Premiership & Divs 1,2,3 & Conference", br(),
-strong("Scotland"),":	Premiership & Divs 1,2 & 3", br(),
-strong("Germany"),":	Bundesligas 1 & 2", br(),
-strong("Italy"),":	Serie A & B", br(),
-strong("Spain"),":	La Liga (Premera & Segunda)", br(),
-strong("France"),":	Le Championnat & Division 2", br(),
-strong("Netherlands"),":	KPN Eredivisie", br(),
-strong("Belgium"),":	Jupiler League", br(),
-strong("Portugal"),":	Liga I", br(),
-strong("Turkey"),":	Ligi 1", br(),
-strong("Greece"),":	Ethniki Katigoria"
+strong("England"), ":	Premiership & Divs 1,2,3 & Conference", br(),
+strong("Scotland"), ":	Premiership & Divs 1,2 & 3", br(),
+strong("Germany"), ":	Bundesligas 1 & 2", br(),
+strong("Italy"), ":	Serie A & B", br(),
+strong("Spain"), ":	La Liga (Premera & Segunda)", br(),
+strong("France"), ":	Le Championnat & Division 2", br(),
+strong("Netherlands"), ":	KPN Eredivisie", br(),
+strong("Belgium"), ":	Jupiler League", br(),
+strong("Portugal"), ":	Liga I", br(),
+strong("Turkey"), ":	Ligi 1", br(),
+strong("Greece"), ":	Ethniki Katigoria"
 )
 # UI ----------------------------------------------------------------------
 
@@ -49,7 +49,8 @@ ui <- dashboardPage(skin='red',
       menuItem("League Tables", tabName = "league-tables", icon = icon("trophy")),
       menuItem("Team History", tabName = "team-history", icon = icon("line-chart")),
       menuItem("Game History", tabName = "game-history", icon = icon("calendar")),
-      menuItem("All Time Tables", tabName = "all-time-tables", icon = icon("clock-o"))
+      menuItem("All Time Tables", tabName = "all-time-tables", icon = icon("clock-o")),
+      menuItem("All Time Head-to-Head", tabName = "all-time-h2h", icon = icon("adjust"))
     ),
     width='10%'
   ),
@@ -68,7 +69,7 @@ ui <- dashboardPage(skin='red',
                 p(main_page_text),
                 br(),
                 br(),
-                p("The data are provided by the", span(class='pack', 'engsoccerdata'), "package and include the following from", a("http://www.football-data.co.uk/")),
+                p("The data are provided by the", span(class='pack', 'engsoccerdata'), "\npackage and include the following from", a("http://www.football-data.co.uk/")),
                 data_list,
                 p("More details can be found at the author's ", a(href='https://github.com/jalapic/engsoccerdata', 'github page'), '.'),
                 br(),
@@ -85,8 +86,9 @@ ui <- dashboardPage(skin='red',
 
 
       tabItem(tabName = "league-tables",
+              h3('Historical League Tables'),
               fluidRow(
-                sidebarPanel("Get League Tables",
+                sidebarPanel(p('Start with a country, then select from the available seasons. Season year is the beginning year, e.g. 2013 is the 2013/2014 season.'),
                              selectInput("league_country",
                                          "Choose a country:",
                                          choices=unique(teamnames$country),
@@ -110,6 +112,7 @@ ui <- dashboardPage(skin='red',
               h3("Historical First Tier Finishing"),
               fluidRow(
                 sidebarPanel(
+                  p('Select a country/team to see their first tier finishing position, for the seasons they were in the first tier.'),
                   selectInput("team_country",
                               "Choose a country:",
                               choices=unique(teamnames$country),
@@ -128,9 +131,10 @@ ui <- dashboardPage(skin='red',
 #• game-history ------------------------------------------------------------
 
       tabItem(tabName = "game-history",
-              h3("Find a game."),
+              h3("Find a game"),
               fluidRow(
                 sidebarPanel(
+                  p('Select a season to view game results. Some information will only be available for certain leagues.'),
                   selectInput("game_team",
                               "Choose a team:",
                               choices=sort(unique(teamnames$name)),
@@ -186,7 +190,40 @@ ui <- dashboardPage(skin='red',
                   DT::dataTableOutput('all_time_tables', width='86.5%'),
                   width = 7
                 )
-              ))
+              )
+              ),
+
+
+#• H2H tables ---------------------------------------------------------
+
+      tabItem(tabName = "all-time-h2h",
+              h3("View all-time head to head matchups"),
+              fluidRow(
+                sidebarPanel(
+                  selectInput("h2h_country",
+                              "Choose a country/league:",
+                              choices=sort(unique(all_leagues_all_time_records$league)),
+                              selected='England'),
+                  uiOutput('h2h_team1'),
+                  uiOutput('h2h_team2'),
+                  width=2
+                ),
+                column(
+                  DT::dataTableOutput('h2h_result'),
+                  width = 4
+                ),
+
+                box(
+                  h4('Head-to-head summary'),
+                # column(
+                  DT::dataTableOutput('h2h_summary', width='95%'),
+                  # tableOutput('h2h_summary'),
+                  # width = 4
+                # ),
+                width=5)
+
+              )
+              )
 
     )
 )
@@ -212,13 +249,29 @@ server <- function(input, output) {
 
   output$league = renderDataTable({
     df = df_init()
+
+    reds = RColorBrewer::brewer.pal(5, 'Reds')[2:4]
+    blues = rev(RColorBrewer::brewer.pal(5, 'Blues'))[2:4]  # don't want darkest
+
     maketable_all(df = df, Season=input$year, tier=input$tier) %>%
       mutate(Pos = strtoi(Pos)) %>%
+      mutate(color = NA,
+             color = ifelse(Pos <= 3, 'top', color),
+             color = ifelse(Pos >= nrow(.)-2, 'bot', color),
+             color = paste0(color, c(1:3, rep(NA, nrow(.)-6), 1:3))
+             ) %>%  # because styleEqual is dumber than styleInterval
       datatable(extensions='Buttons',
                 rownames=F,
                 options=list(dom='Bt',
                              pageLength=nrow(.),
-                             buttons = c('copy', 'csv')))
+                             buttons = c('copy', 'csv'),
+                             columnDefs = list(list(visible=FALSE, targets=10)))) %>%
+      formatStyle(
+        target = 'row',
+        columns = 'color',
+        backgroundColor = styleEqual(c(paste0('top', 1:3), paste0('bot', 1:3)), c(blues, reds)),
+        color = styleEqual(c(paste0('top', 1:3), paste0('bot', 1:3)), rep('white', 6)))
+
   })
 
   output$Year <- renderUI({
@@ -336,7 +389,7 @@ server <- function(input, output) {
 
 
 # All time records --------------------------------------------------------
-  # observeEvent(input$all_time_league, {
+
 
     output$all_time_tables = DT::renderDataTable({
       all_leagues_all_time_records %>%
@@ -355,7 +408,83 @@ server <- function(input, output) {
                   )
     })
 
-  # })
+
+# All time H2H ------------------------------------------------------------
+
+
+  observeEvent(input$h2h_country, {
+    df_init_h2h = reactive({
+      c0 = tolower(input$h2h_country)
+      if (c0 == 'united states') c0 = 'mls'
+      get(c0)
+    })
+
+    df = df_init_h2h()
+    nams = intersect(df$home, df$visitor)
+
+    # get popular teams
+    pop_teams = all_leagues_all_time_records %>%
+      filter(league==input$h2h_country) %>%
+      unnest %>%
+      slice(1:2) %>%
+      pull(team)
+
+    output$h2h_team1 <- renderUI({
+      selectInput("h2h_team1", "Team 1:",
+                  choices=sort(nams),
+                  selected=pop_teams[1])
+    })
+
+    output$h2h_team2 <- renderUI({
+      selectInput("h2h_team2", "Team 2:",
+                  choices=sort(nams),
+                  selected=pop_teams[2])
+  })
+
+  # all results
+  output$h2h_result = renderDataTable({
+    games_between(df, teamname1=input$h2h_team1, teamname2=input$h2h_team2) %>%
+      select(-Season) %>%
+      datatable(extensions='Buttons',
+                rownames=F,
+                options=list(dom='Bt',
+                             pageLength=nrow(.),
+                             buttons = c('copy', 'csv'),
+                             scrollX=T,
+                             autoWidth = TRUE,
+                             columnDefs = list(list(width = '75px', targets = 0),
+                                               list(width = '150px', targets = c(1,2)),
+                                               list(width = '10px', targets = c(3,4)),
+                                               list(className = 'dt-center', targets = c(0,3,4)))))
+  })
+
+  # summary
+  output$h2h_summary = renderDataTable({
+    games_between_sum(df, teamname1=input$h2h_team1, teamname2=input$h2h_team2) %>%
+      select(-venue) %>%
+      # pander::pander()
+      filter(GD >= 0 | W == max(W)) %>%    # only show result in terms of the winner
+      datatable(extensions='Buttons',
+                rownames=F,
+                options=list(dom='t',
+                             ordering=F,
+                             pageLength=nrow(.),
+                             buttons = c('copy', 'csv'),
+                             scrollX=T,
+                             autoWidth = TRUE,
+                             columnDefs = list(list(width = '125px', targets = 0:1),
+                                               list(width = '5px', targets = c(2:7)),
+                                               list(className = 'dt-left', targets = c(0:1)),
+                                               list(className = 'dt-center', targets = c(2:7))
+                                               )
+                             )) %>%
+      formatStyle(
+        target = 'row',
+        columns = 0:7,
+        backgroundColor = 'transparent')
+  })
+
+  })
 
 
 }
