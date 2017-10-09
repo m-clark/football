@@ -141,10 +141,11 @@ ui <- dashboardPage(skin='red',
                               "Choose a team:",
                               choices=sort(unique(teamnames$name)),
                               selected='Everton'),
-                  uiOutput('gamesUI'), width=2
+                  uiOutput('gamesUI'),
+                  width=2
                 ),
                 column(
-                  DT::dataTableOutput('games'),
+                  DT::dataTableOutput('games', width='90%'),
                   br(),
                   br(),
                   p(strong('Date'),': Date of match', br(),
@@ -152,29 +153,31 @@ ui <- dashboardPage(skin='red',
                     strong('home'),': Home team', br(),
                     strong('visitor'),': Visiting team',
                     strong('FT'),': Full-time result', br(),
-                    strong('hgoal'),': Goals scored by home team', br(),
-                    strong('vgoal'),': Goals scored by visiting team', br(),
-                    strong('division'),': Division: 1,2,3,4 or 3a (Old 3-North) or 3b (Old 3-South)', br(),
-                    strong('tier'),': Tier of football pyramid: 1,2,3,4', br(),
-                    strong('totgoal'),': Total goals in game', br(),
-                    strong('goaldif'),': Goal difference in game home goals - visitor goals', br(),
                     strong('result'),': Result: H-Home Win, A-Away Win, D-Draw', br(),
-                    strong('hgoal'),': Goals scored by home team', br(),
-                    strong('vgoal'),': Goals scored by visiting team', br(),
-                    strong('hconf'),': Conference of home team', br(),
-                    strong('vconf'),': Conference of visiting team', br(),
-                    strong('totgoal'),': Total goals in game', br(),
                     strong('round'),': Regular Season or Playoff round', br(),
-                    strong('leg'),': leg of Playoff game', br(),
-                    strong('hgoalaet'),': Goals scored by home team after extra time', br(),
-                    strong('vgoalaet'),': Goals scored by visiting team after extra time', br(),
-                    strong('hpen'),': Penalties scored by home team in shootout', br(),
-                    strong('vpen'),': Penalties scored by visiting team in shootout'),
-                  width=10
+                    strong('division'),': Division: 1,2,3,4 or 3a (Old 3-North) or 3b (Old 3-South)', br()),
+
+                    width=7
                 )
               )
       ),
 
+      # removed mostly useless columns
+      # strong('hgoal'),': Goals scored by home team', br(),
+      # strong('vgoal'),': Goals scored by visiting team', br(),
+      # strong('tier'),': Tier of football pyramid: 1,2,3,4', br(),
+      # strong('totgoal'),': Total goals in game', br(),
+      # strong('goaldif'),': Goal difference in game home goals - visitor goals', br(),
+      # strong('hgoal'),': Goals scored by home team', br(),
+      # strong('vgoal'),': Goals scored by visiting team', br(),
+      # strong('hconf'),': Conference of home team', br(),
+      # strong('vconf'),': Conference of visiting team', br(),
+      # strong('totgoal'),': Total goals in game', br(),
+      # strong('leg'),': leg of Playoff game', br(),
+      # strong('hgoalaet'),': Goals scored by home team after extra time', br(),
+      # strong('vgoalaet'),': Goals scored by visiting team after extra time', br(),
+      # strong('hpen'),': Penalties scored by home team in shootout', br(),
+      # strong('vpen'),': Penalties scored by visiting team in shootout'),
 
 #• all-time tables ---------------------------------------------------------
 
@@ -344,7 +347,9 @@ server <- function(input, output) {
         # formatting problem. among other arbitrary decisions plotly devs have
         # made,one is to not do stupid formatting if there is at least five
         # units displayed
-        minYear_xaxis = ifelse(nrow(team) < 3, min(team$Season)-3, min(team$Season)-1)
+        minYear_xaxis = ifelse(nrow(team) < 3,
+                               min(team$Season)-3,
+                               min(team$Season)-1)
         maxYear_xaxis = ifelse(max(team$Season)>=lubridate::year(Sys.Date())-2,
                                max(team$Season)+1,
                                max(team$Season)+3)
@@ -382,13 +387,20 @@ server <- function(input, output) {
   output$gamesUI <- renderUI({
     games = all_leagues %>%
       filter(home==input$game_team | visitor==input$game_team)
-    selectInput("season", "Select a season:", c('', games$Season), selected=NULL)
+
+    select_yr = as.integer(lubridate::year(Sys.Date())-1)
+
+    # this recursion seems to work best
+    selectInput("season", "Select a season:", unique(games$Season), selected=input$season)
   })
 
+
+  # currently shiny will ignore widths on first load
   observeEvent(input$season, {
 
     output$games = DT::renderDataTable({
       all_leagues %>%
+        select(Date, Season, home, visitor, FT, result, round, division) %>%
         filter(home==input$game_team | visitor==input$game_team) %>%
         filter(Season == input$season) %>%
         arrange(desc(Date)) %>%
@@ -399,10 +411,12 @@ server <- function(input, output) {
                                buttons = c('copy', 'csv'),
                                scrollX=T,
                                autoWidth = TRUE,
-                               columnDefs = list(list(width = '75px', targets = c(1)),
-                                                 list(width = '150px', targets = c(3,4)))
-                  ),
-                  width=1200
+                               columnDefs = list(list(width = '75px', targets = c(0)),
+                                                 list(width = '50px', targets = c(1)),
+                                                 list(width = '150px', targets = c(2,3)),
+                                                 list(width = '25px', targets = c(4:7)),
+                                                 list(class='dt-center', targets=c(1,4:7)))
+                               )
         )
   })
   })
@@ -442,7 +456,7 @@ server <- function(input, output) {
     df = df_init_h2h()
     nams = intersect(df$home, df$visitor)
 
-    # get popular teams
+    # set popular teams as default
     pop_teams = all_leagues_all_time_records %>%
       filter(league==input$h2h_country) %>%
       unnest %>%
