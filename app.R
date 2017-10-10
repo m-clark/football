@@ -43,6 +43,7 @@ ui <- dashboardPage(skin='red',
     title="Historical Football Data",
     titleWidth='15%'
     ),
+
   dashboardSidebar(
     sidebarMenu(
       menuItem("Main", tabName = "main", icon = icon("futbol-o")),
@@ -54,6 +55,7 @@ ui <- dashboardPage(skin='red',
     ),
     width='10%'
   ),
+
   dashboardBody(
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "standard_html.css")
@@ -145,7 +147,7 @@ ui <- dashboardPage(skin='red',
                   width=2
                 ),
                 column(
-                  DT::dataTableOutput('games', width='90%'),
+                  DT::dataTableOutput('games', width='100%'),
                   br(),
                   br(),
                   p(strong('Date'),': Date of match', br(),
@@ -157,7 +159,7 @@ ui <- dashboardPage(skin='red',
                     strong('round'),': Regular Season or Playoff round', br(),
                     strong('division'),': Division: 1,2,3,4 or 3a (Old 3-North) or 3b (Old 3-South)', br()),
 
-                    width=7
+                  style = "font-size: 85%;", width=5
                 )
               )
       ),
@@ -403,6 +405,7 @@ server <- function(input, output) {
         select(Date, Season, home, visitor, FT, result, round, division) %>%
         filter(home==input$game_team | visitor==input$game_team) %>%
         filter(Season == input$season) %>%
+        select(-Season) %>%
         arrange(desc(Date)) %>%
         datatable(extensions='Buttons',
                   rownames=F,
@@ -410,12 +413,11 @@ server <- function(input, output) {
                                pageLength=nrow(.),
                                buttons = c('copy', 'csv'),
                                scrollX=T,
-                               autoWidth = TRUE,
-                               columnDefs = list(list(width = '75px', targets = c(0)),
-                                                 list(width = '50px', targets = c(1)),
-                                                 list(width = '150px', targets = c(2,3)),
-                                                 list(width = '25px', targets = c(4:7)),
-                                                 list(class='dt-center', targets=c(1,4:7)))
+                               autoWidth = F,
+                               columnDefs = list(list(width = '15%', targets = 0),
+                                                 list(width = '22.5%', targets = 1:2),
+                                                 list(width = '10%', targets = 3:6),
+                                                 list(class='dt-center', targets=c(0,3:6)))
                                )
         )
   })
@@ -435,9 +437,9 @@ server <- function(input, output) {
                                pageLength=nrow(.),
                                buttons = c('copy', 'csv'),
                                scrollX=T,
-                               autoWidth = TRUE,
-                               columnDefs = list(list(width = '75px', targets = c(0)),
-                                                 list(width = '200px', targets = c(1)))
+                               autoWidth = F,
+                               columnDefs = list(list(width = '12.5%', targets = c(0)),
+                                                 list(width = '20%', targets = c(1)))
                   )
                   )
     })
@@ -486,7 +488,7 @@ server <- function(input, output) {
                              pageLength=nrow(.),
                              buttons = c('copy', 'csv'),
                              scrollX=T,
-                             autoWidth = TRUE,
+                             autoWidth = F,
                              columnDefs = list(list(width = '75px', targets = 0),
                                                list(width = '150px', targets = c(1,2)),
                                                list(width = '10px', targets = c(3,4)),
@@ -506,7 +508,7 @@ server <- function(input, output) {
                              pageLength=nrow(.),
                              buttons = c('copy', 'csv'),
                              scrollX=T,
-                             autoWidth = TRUE,
+                             autoWidth = F,
                              columnDefs = list(list(width = '125px', targets = 0:1),
                                                list(width = '5px', targets = c(2:7)),
                                                list(className = 'dt-left', targets = c(0:1)),
