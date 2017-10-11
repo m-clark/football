@@ -125,30 +125,88 @@ h1, h2, h3, h4, h5 {
 }
 
 
-div.datatables {
+.datatables {
     margin-left: auto;     /* to center them when full is not necessary. */
     margin-right: auto;
 }
+
+button.dt-button, div.dt-button, a.dt-button {
+    position: relative;
+    display: inline-block;
+    box-sizing: border-box;
+    margin-right: 0.333em;
+    padding: 0.5em 1em;
+    border: 1px solid #999;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.88em;
+    color: black;
+    white-space: nowrap;
+    overflow: hidden;
+    background-color: #e9e9e9;
+    background-image: -webkit-linear-gradient(top, #fff 0%, #e9e9e9 100%);
+    background-image: -moz-linear-gradient(top, #fff 0%, #e9e9e9 100%);
+    background-image: -ms-linear-gradient(top, #fff 0%, #e9e9e9 100%);
+    background-image: -o-linear-gradient(top, #fff 0%, #e9e9e9 100%);
+    background-image: linear-gradient(to bottom, #fff 0%, #e9e9e9 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,StartColorStr='white', EndColorStr='#e9e9e9');
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    text-decoration: none;
+    outline: none;
+}
+
+
 
 table {
   margin: auto;
 }
 
 
+
+
+
+
+
 /* dashboard specific */
 
-.skin-red .main-header .logo  {
+.skin-red .main-header .logo {
   background-color: #9E1B34;
+}
+
+.skin-red .main-header .logo:hover  {
+  background-color: #9E1B34;  /*maybe change to something later*/
+  color: #fff;
 }
 
 .skin-red .main-header .navbar {
   background-color: #9E1B34;
 }
 
+.skin-red .sidebar-menu>li.active>a, .skin-red .sidebar-menu>li:hover>a {
+  border-left-color: #9E1B34;
+}
+
+/*background color of main body*/
 .content  {
   background-color: #fffff8;
 }
 
 .content-wrapper {
   background-color: #fffff8;
+}
+
+/* selection input area */
+
+.well {
+  background-color: #585858; /*#222d32 #02529C #DC1E35*/
+  color: white;
+}
+
+/* control the font on selection text*/
+.control-label {
+  font-weight: 500;
+  font-variant: small-caps;
 }

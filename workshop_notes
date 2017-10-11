@@ -34,3 +34,4 @@ issues:
   - help files often don't contain examples
   - many demos docs are too simplisitic to be of much use beyond very basic
 - standard conditionals and other programming basics may require a lot of time to pull off correctly
+- beware of old advice and hacks

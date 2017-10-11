@@ -1,6 +1,7 @@
 
 # Preliminaries -----------------------------------------------------------
 
+# devtools::install_github('jalapic/engsoccerdata')  # will not do anything if not necessary
 library(shiny); library(shinydashboard); library(dplyr); library(tidyr);
 library(engsoccerdata);
 library(DT); library(plotly);
@@ -17,7 +18,7 @@ mls$tier = 1  # only dataset that doesn't have tier for some reason
 load('data/all_leagues.RData')
 
 
-main_page_text = "This dashboard creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), league games for a specific season, all-time tables, and all-time head-to-head results."
+main_page_text = p("This site offers ", em('historical'), " data for a variety of football leagues, including the major European leagues and MLS.  creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), league games for a specific season, all-time tables, and all-time head-to-head results.")
 
 data_list = p(
 strong("England"), ":	Premiership & Divs 1,2,3 & Conference", br(),
@@ -41,7 +42,7 @@ ui <- dashboardPage(skin='red',
 
   dashboardHeader(
     title="Historical Football Data",
-    titleWidth='15%'
+    titleWidth='250px'
     ),
 
   dashboardSidebar(
@@ -53,7 +54,7 @@ ui <- dashboardPage(skin='red',
       menuItem("All Time Tables", tabName = "all-time-tables", icon = icon("clock-o")),
       menuItem("All Time Head-to-Head", tabName = "all-time-h2h", icon = icon("adjust"))
     ),
-    width='10%'
+    width='250px' # if set to %, will not collapse properly
   ),
 
   dashboardBody(
@@ -71,7 +72,7 @@ ui <- dashboardPage(skin='red',
                 p(main_page_text),
                 br(),
                 br(),
-                p("The data are provided by the", span(class='pack', 'engsoccerdata'), "\npackage and include the following from", a("http://www.football-data.co.uk/")),
+                p("The data are provided by the", span(class='pack', 'engsoccerdata'), "\npackage and include the following from", a(href="http://www.football-data.co.uk/", 'http://www.football-data.co.uk/')),
                 data_list,
                 p("More details can be found at the author's ", a(href='https://github.com/jalapic/engsoccerdata', 'github page'), '.'),
                 br(),
@@ -81,7 +82,9 @@ ui <- dashboardPage(skin='red',
                     img(src='img/Sheffield_Wednesday.png', width='12%'),
                     img(src='img/Portland_Timbers_logo.svg.png', width='15%'),
                     img(src='img/Everton.svg', width='15%'),
-                    img(src='img/FC_St._Pauli.svg', width='15%')))),
+                    img(src='img/FC_St._Pauli.svg', width='15%')),
+                style = "font-size:125%")
+              ),
 
 
 #• league-history ----------------------------------------------------------
@@ -89,6 +92,7 @@ ui <- dashboardPage(skin='red',
 
       tabItem(tabName = "league-tables",
               h3('Historical League Tables'),
+              br(),
               fluidRow(
                 sidebarPanel(p('Start with a country, then select from the available seasons. Season year is the beginning year, e.g. 2013 is the 2013/2014 season.'),
                              br(),
@@ -113,6 +117,7 @@ ui <- dashboardPage(skin='red',
 
       tabItem(tabName = "team-history",
               h3("Historical First Tier Finishing"),
+              br(),
               fluidRow(
                 sidebarPanel(
                   p('Select a country/team to see their first tier finishing position, for the seasons they were in the first tier.', strong('It will take a few seconds to process the data.')),
@@ -136,9 +141,10 @@ ui <- dashboardPage(skin='red',
 
       tabItem(tabName = "game-history",
               h3("Find a game"),
+              br(),
               fluidRow(
                 sidebarPanel(
-                  p('Select a season to view game results. Some information will only be available for certain leagues.'),
+                  p('Select a season to view game results for any team.', br(), 'Leagues will have different seasons available.'),
                   selectInput("game_team",
                               "Choose a team:",
                               choices=sort(unique(teamnames$name)),
@@ -159,7 +165,7 @@ ui <- dashboardPage(skin='red',
                     strong('round'),': Regular Season or Playoff round', br(),
                     strong('division'),': Division: 1,2,3,4 or 3a (Old 3-North) or 3b (Old 3-South)', br()),
 
-                  style = "font-size: 85%;", width=5
+                  style = "font-size: 90%;", width=5
                 )
               )
       ),
@@ -185,6 +191,7 @@ ui <- dashboardPage(skin='red',
 
       tabItem(tabName = "all-time-tables",
               h3("View all-time records for every team"),
+              br(),
               fluidRow(
                 sidebarPanel(
                   selectInput("all_time_league",
@@ -194,8 +201,8 @@ ui <- dashboardPage(skin='red',
                   width=2
                 ),
                 column(
-                  DT::dataTableOutput('all_time_tables', width='86.5%'),
-                  width = 7
+                  DT::dataTableOutput('all_time_tables'),
+                  width = 5
                 )
               )
               ),
@@ -205,6 +212,7 @@ ui <- dashboardPage(skin='red',
 
       tabItem(tabName = "all-time-h2h",
               h3("View all-time head to head matchups"),
+              br(),
               fluidRow(
                 sidebarPanel(
                   selectInput("h2h_country",
@@ -430,6 +438,7 @@ server <- function(input, output) {
     output$all_time_tables = DT::renderDataTable({
       all_leagues_all_time_records %>%
         filter(league==input$all_time_league) %>%
+        select(-league) %>%
         unnest %>%
         datatable(extensions='Buttons',
                   rownames=F,
@@ -438,8 +447,7 @@ server <- function(input, output) {
                                buttons = c('copy', 'csv'),
                                scrollX=T,
                                autoWidth = F,
-                               columnDefs = list(list(width = '12.5%', targets = c(0)),
-                                                 list(width = '20%', targets = c(1)))
+                               columnDefs = list(list(width = '10%', targets = 1))
                   )
                   )
     })
@@ -496,6 +504,7 @@ server <- function(input, output) {
   })
 
   # summary
+  observeEvent(input$h2h_team2, {
   output$h2h_summary = renderDataTable({
     games_between_sum(df, teamname1=input$h2h_team1, teamname2=input$h2h_team2) %>%
       select(-venue) %>%
@@ -521,6 +530,7 @@ server <- function(input, output) {
         backgroundColor = 'transparent')
   })
 
+  })
   })
 
 
