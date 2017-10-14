@@ -49,10 +49,13 @@ all_leagues %>%
   filter(nchar_home == max(nchar_home) | nchar_visitor==max(nchar_visitor))
 #Association Sportive Avignonaise
 
-
+enland_season_tier_tables = england %>%
+  group_by(Season, tier, division) %>%
+  do(tab=maketable_all(.))
 
 save(all_leagues,
      all_leagues_all_time_records,
+     enland_season_tier_tables,
      file='data/all_leagues.RData')
 
 

@@ -18,20 +18,21 @@ mls$tier = 1  # only dataset that doesn't have tier for some reason
 load('data/all_leagues.RData')
 
 
-main_page_text = p("This site offers ", em('historical'), " data for a variety of football leagues, including the major European leagues and MLS.  creates tables for a given country and year selected. A few countries will have multiple tiers available.  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), league games for a specific season, all-time tables, and all-time head-to-head results.")
+main_page_text = p("This site offers ", em('historical'), " data for a variety of football leagues, including the major European leagues and MLS.  One can create tables for a given country/league and year selected, with some leagues having multiple tiers available, and stretching back many decades (origin year in parenthesis).  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), league games for a specific season, all-time tables, and all-time head-to-head results (within a league).")
 
 data_list = p(
-strong("England"), ":	Premiership & Divs 1,2,3 & Conference", br(),
-strong("Scotland"), ":	Premiership & Divs 1,2 & 3", br(),
-strong("Germany"), ":	Bundesligas 1 & 2", br(),
-strong("Italy"), ":	Serie A & B", br(),
-strong("Spain"), ":	La Liga (Premera & Segunda)", br(),
-strong("France"), ":	Le Championnat & Division 2", br(),
-strong("Netherlands"), ":	KPN Eredivisie", br(),
-strong("Belgium"), ":	Jupiler League", br(),
-strong("Portugal"), ":	Liga I", br(),
-strong("Turkey"), ":	Ligi 1", br(),
-strong("Greece"), ":	Ethniki Katigoria"
+  strong("Belgium"), ":	Jupiler League (1995).", br(),
+  strong("England"), ":	Premiership & Divs 1,2,3 & Conference (1888)", br(),
+  strong("France"), ":	Le Championnat & Division 2 (1932)", br(),
+  strong("Germany"), ":	Bundesligas 1 & 2 (1963)", br(),
+  strong("Greece"), ":	Ethniki Katigoria (1994)", br(),
+  strong("Italy"), ":	Serie A & B (1929)", br(),
+  strong("Netherlands"), ":	KPN Eredivisie (1956)", br(),
+  strong("Portugal"), ":	Liga I (1994)", br(),
+  strong("Scotland"), ":	Premiership & Divs 1,2 & 3 (1994)", br(),
+  strong("Spain"), ":	La Liga Premera & Segunda (1928)", br(),
+  strong("Turkey"), ":	Ligi 1 (1994)", br(),
+  strong("United States"), ":	MLS (1996)"
 )
 # UI ----------------------------------------------------------------------
 
@@ -74,7 +75,7 @@ ui <- dashboardPage(skin='red',
                 br(),
                 p("The data are provided by the", span(class='pack', 'engsoccerdata'), "\npackage and include the following from", a(href="http://www.football-data.co.uk/", 'http://www.football-data.co.uk/')),
                 data_list,
-                p("More details can be found at the author's ", a(href='https://github.com/jalapic/engsoccerdata', 'github page'), '.'),
+                p("More details can be found at the author's ", a(href='https://github.com/jalapic/engsoccerdata', 'GitHub page.'), 'For more and other types of data from the same data source, see the really nice shiny app', a(href='https://github.com/LyzandeR/FootballeR', 'here.')),
                 br(),
                 br(),
                 div(style='text-align:center',
@@ -329,9 +330,13 @@ server <- function(input, output) {
       withProgress(message = 'Generating data', detail = 'Processing...', value = 0, {
         incProgress(.1)
 
-        all_seasons = df_init2() %>%
-          group_by(Season) %>%
-          do(tab=maketable_all(., tier=1))
+        if (input$team_country == 'England') {
+          all_seasons = enland_season_tier_tables
+        } else {
+          all_seasons = df_init2() %>%
+            group_by(Season, tier) %>%
+            do(tab=maketable_all(.))
+        }
 
         incProgress(.7)
 
@@ -340,22 +345,24 @@ server <- function(input, output) {
         # https://github.com/plotly/plotly.js/issues/135
         team = all_seasons %>%
           do(team = filter(.$tab, team==input$team),
-             Season = .$Season) %>%
-          unnest(Season) %>%
+             Season = .$Season,
+             tier = .$tier) %>%
+          unnest(Season, tier) %>%
           unnest %>%
-          mutate_at(vars(Season, Pts, Pos), as.integer)
+          mutate_at(vars(Season, Pts, Pos), as.integer) %>%
+          mutate(tier=factor(tier, levels=1:4))
 
         incProgress(.2)
 
       })
 
       output$team_history = renderPlotly({
-        validate(
-          need(try(nrow(team) != 0), "Sorry, your team sucks and was never in the first tier, so who cares what they did.")
-        )
-        # first of min ifelse fixes the 'bournemouth', i.e. plotly year
+        # validate(
+        #   need(try(nrow(team) != 0), "Sorry, your team sucks and was never in the first tier, so who cares what they did.")
+        # )
+        # first of min ifelse fixes the 'bournemouth' problem, i.e. plotly year
         # formatting problem. among other arbitrary decisions plotly devs have
-        # made,one is to not do stupid formatting if there is at least five
+        # made,one is to not do stupid formatting if there is not at least five
         # units displayed
         minYear_xaxis = ifelse(nrow(team) < 3,
                                min(team$Season)-3,
@@ -365,10 +372,11 @@ server <- function(input, output) {
                                max(team$Season)+3)
         team %>%
           plot_ly() %>%
-          add_lines(x=~Season, y=~Pos, color=I('#ff5500')) %>%
+          add_lines(x=~Season, y=~Pos,
+                    color=I('#ff5500'), text=NA, showlegend=F) %>%
           add_markers(x=~Season, y=~Pos,
-                      color=~gd>0, size=~-Pos, text=~paste('GD:',gd),
-                      showlegend=F, colors='Viridis') %>%
+                      color=~tier, size=~-Pos, text=~paste('GD:',gd),
+                      showlegend=T, colors='Viridis', name='Tier') %>%
           layout(title = input$team,
                  xaxis = list(zeroline=F,
                               showgrid=F,
