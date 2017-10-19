@@ -132,7 +132,7 @@ ui <- dashboardPage(skin='red',
                 ),
                 column(
                   plotlyOutput('team_history'),
-                  width=5
+                  width=7
                 )
               )
       ),
@@ -373,7 +373,8 @@ server <- function(input, output) {
         team %>%
           plot_ly() %>%
           add_lines(x=~Season, y=~Pos,
-                    color=I('#ff5500'), text=NA, showlegend=F) %>%
+                    color=I('#66023C'), text=NA, showlegend=F,
+                    line = list(shape = "hvh"), opacity=.75) %>%
           add_markers(x=~Season, y=~Pos,
                       color=~tier, size=~-Pos, text=~paste('GD:',gd),
                       showlegend=T, colors='Viridis', name='Tier') %>%
