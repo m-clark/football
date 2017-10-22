@@ -18,7 +18,7 @@ mls$tier = 1  # only dataset that doesn't have tier for some reason
 load('data/all_leagues.RData')
 
 
-main_page_text = p("This site offers ", em('historical'), " data for a variety of football leagues, including the major European leagues and MLS.  One can create tables for a given country/league and year selected, with some leagues having multiple tiers available, and stretching back many decades (origin year in parenthesis).  Beyond that, one can get a specific teams' historical first tier finishing position (assuming they were ever in the first tier), league games for a specific season, all-time tables, and all-time head-to-head results (within a league).")
+main_page_text = p("This site offers ", em('historical'), " data for a variety of football leagues, including the major European leagues and MLS.  One can create tables for a given country/league and year selected, with some leagues having multiple tiers available, and stretching back many decades (origin year in parenthesis).  Beyond that, one can get a specific teams' historical finishing position, league games for a specific season, all-time tables, and all-time head-to-head results (within a league).")
 
 data_list = p(
   strong("Belgium"), ":	Jupiler League (1995).", br(),
@@ -331,7 +331,7 @@ server <- function(input, output) {
         incProgress(.1)
 
         if (input$team_country == 'England') {
-          all_seasons = enland_season_tier_tables
+          all_seasons = england_season_tier_tables
         } else {
           all_seasons = df_init2() %>%
             group_by(Season, tier) %>%
@@ -371,13 +371,13 @@ server <- function(input, output) {
                                max(team$Season)+1,
                                max(team$Season)+3)
         team %>%
+          mutate(tiernum = as.numeric(tier)) %>%
+          mutate(Pos2 = rescale(ifelse(tiernum>1, Pos+ 25*tiernum, Pos), to=c(1,.1))/tiernum) %>%
           plot_ly() %>%
-          add_lines(x=~Season, y=~Pos,
-                    color=I('#66023C'), text=NA, showlegend=F,
-                    line = list(shape = "hvh"), opacity=.75) %>%
-          add_markers(x=~Season, y=~Pos,
-                      color=~tier, size=~-Pos, text=~paste('GD:',gd),
-                      showlegend=T, colors='Viridis', name='Tier') %>%
+          add_lines(x=~Season, y=~rev(Pos), color=I('#66023C'), text=NA, showlegend=F,
+                    line = list(shape = "hvh"), opacity=.5) %>%
+          add_markers(x=~Season, y=~rev(Pos), size=~Pos2, colors=viridis::plasma(4), #showlegend=F,
+                      color=~tier, marker=list(sizeref=2*1/(2**2))) %>%
           layout(title = input$team,
                  xaxis = list(zeroline=F,
                               showgrid=F,
@@ -387,9 +387,10 @@ server <- function(input, output) {
                               tickformat='####'),
                  yaxis = list(zeroline=F,
                               showgrid=F,
-                              range=c(25,.5),
-                              autorange = "reversed",
+                              range=c(25,0),
+                              # autorange = "reversed",
                               dtick=2,
+                              autotick=F,
                               tick0 = 1),
                  plot_bgcolor='transparent',
                  paper_bgcolor='transparent') %>%
