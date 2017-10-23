@@ -121,7 +121,7 @@ ui <- dashboardPage(skin='red',
               br(),
               fluidRow(
                 sidebarPanel(
-                  p('Select a country/team to see their first tier finishing position, for the seasons they were in the first tier.', strong('It will take a few seconds to process the data.')),
+                  p('Select a country/team to see their finishing position, for the seasons for which data is available.  The year marks that of the season end.', strong('It will take a few seconds to process the data.')),
                   br(),
                   selectInput("team_country",
                               "Choose a country:",
@@ -372,20 +372,22 @@ server <- function(input, output) {
                                max(team$Season)+3)
         team %>%
           mutate(tiernum = as.numeric(tier)) %>%
-          mutate(Pos2 = rescale(ifelse(tiernum>1, Pos+ 25*tiernum, Pos), to=c(1,.1))/tiernum) %>%
+          mutate(Pos2 = scales::rescale(ifelse(tiernum>1, Pos+ 25*tiernum, Pos), to=c(1,.1))/tiernum) %>%
           plot_ly() %>%
-          add_lines(x=~Season, y=~rev(Pos), color=I('#66023C'), text=NA, showlegend=F,
+          add_lines(x=~Season, y=~Pos, color=I('#66023C'), text=NA, showlegend=F,
                     line = list(shape = "hvh"), opacity=.5) %>%
-          add_markers(x=~Season, y=~rev(Pos), size=~Pos2, colors=viridis::plasma(4), #showlegend=F,
+          add_markers(x=~Season, y=~Pos, size=~Pos2, colors=viridis::plasma(4), #showlegend=F,
                       color=~tier, marker=list(sizeref=2*1/(2**2))) %>%
           layout(title = input$team,
-                 xaxis = list(zeroline=F,
+                 xaxis = list(title = 'Year',
+                              zeroline=F,
                               showgrid=F,
                               range=c(minYear_xaxis, maxYear_xaxis),
                               tick0 = minYear_xaxis,
                               # dtick = 1,
                               tickformat='####'),
-                 yaxis = list(zeroline=F,
+                 yaxis = list(title='Position',
+                              zeroline=F,
                               showgrid=F,
                               range=c(25,0),
                               # autorange = "reversed",
